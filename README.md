@@ -28,7 +28,9 @@ class BaseSystem(System):
     ...
     def addCPU(self, CPU):
         self.cpu = CPU
-        self.cpu.isa = RiscvISA(spmm_vlen=128) # spmm_vlen default: 256
+        self.cpu.isa = RiscvISA(enable_spmm = True, spmm_vlen=128)
+        # enable_spmm default: True
+        # spmm_vlen default: 256
     ...
 ```
 
@@ -66,8 +68,30 @@ in `src/spmm.h` (examples are in `tests/*.c`)
 
 Notice: STPS, STRES, MERGE with related buffer index should not be used consecutively. (may be issued out of order.)
 
+## Test
+
+1. build executable files first in `./tests/`
+
+```bash
+make -C tests
+```
+
+2. tests single case
+
+```bash
+make test-LDVALIDX
+```
+
+3. tests multiple cases
+
+set TEST variables in Makefile first, and then make.
+
+```bash
+make # this will run all cases in TEST
+```
+
 ## TODO List
 
 - [ ] support other ElemType.
-- [ ] support ISA to enable SpMM Extension by parameter.
+- [x] support ISA to enable SpMM Extension by parameter.
 - [ ] supprt asm inline by complier.

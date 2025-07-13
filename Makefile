@@ -1,8 +1,7 @@
 GEM5 = gem5-riscv
 GEM5_DEBUG = /opt/gem5/build/RISCV/gem5.debug
 # TEST = /opt/gem5/tests/test-progs/hello/bin/riscv/linux/hello
-TEST = MERGE
-# LDVALIDX LDPRF VSMUL STPS
+TEST = LDVALIDX LDPRF VSMUL STPS MERGE
 
 TEST_PROGRAM = $(patsubst %,./tests/%,$(TEST))
 
