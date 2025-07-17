@@ -28,7 +28,11 @@ class BaseSystem(System):
 
     def addCPU(self, CPU):
         self.cpu = CPU
-        self.cpu.isa = RiscvISA(enable_spmm = True, spmm_vlen=128)
+        self.cpu.isa = RiscvISA(
+            enable_spmm = True,
+            spmm_vlen = 128,
+            spmm_elen = 8,
+            spmm_fp = False)
 
     def addL1L2L3(self, L1DLatency, L2Cache, L3Cache):
 

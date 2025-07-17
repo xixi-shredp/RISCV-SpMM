@@ -4,8 +4,7 @@
 #include <stdint.h>
 
 #define VLEN 128
-#define ElemType uint16_t
-#define ELEN 16
+#define ELEN (sizeof(ElemType) * 8)
 
 #define ENUM (VLEN / ELEN)
 
