@@ -28,13 +28,19 @@ class BaseSystem(System):
     ...
     def addCPU(self, CPU):
         self.cpu = CPU
-        self.cpu.isa = RiscvISA(enable_spmm = True, spmm_vlen=128)
+        self.cpu.isa = RiscvISA(
+          enable_spmm = True,
+          spmm_vlen=128,
+          spmm_elen=8,
+          spmm_fp=False,
+        )
         # enable_spmm default: True
         # spmm_vlen default: 256
     ...
 ```
 
-- only support `uint16_t` currently. (spmm_elen is 16.)
+- only support `int8_t/int16_t/int32_t/int64_t` currently. (set by spmm_elen.)
+- Floatpoint has not been supported now. (spmm_fp should be False)
 
 ### CPU (in `boom-gem5/system/cpus/`)
 
