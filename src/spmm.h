@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define VLEN 128
+#define VLEN 256
 #define ELEN (sizeof(ElemType) * 8)
 
 #define ENUM (VLEN / ELEN)

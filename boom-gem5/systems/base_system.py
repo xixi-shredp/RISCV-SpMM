@@ -24,15 +24,15 @@ class BaseSystem(System):
 
     def setMemoryMode(self, mode):
         self.mem_mode = 'timing'
-        self.mem_ranges = [AddrRange('512MB')]
+        self.mem_ranges = [AddrRange('1024MB')]
 
     def addCPU(self, CPU):
         self.cpu = CPU
         self.cpu.isa = RiscvISA(
             enable_spmm = True,
-            spmm_vlen = 128,
-            spmm_elen = 8,
-            spmm_fp = False)
+            spmm_vlen = 256,
+            spmm_elen = 32,
+            spmm_fp = True)
 
     def addL1L2L3(self, L1DLatency, L2Cache, L3Cache):
 

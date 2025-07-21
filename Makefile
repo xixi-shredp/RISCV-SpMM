@@ -12,9 +12,9 @@ default:
 	make $(patsubst %,test-%,$(TEST))
 
 test-%:
-	$(GEM5) $(DEBUG_FLAG) $(GEM5_FLAGS) run-benchmark -c ./tests/$*
+	gdb --args $(GEM5_DEBUG) $(GEM5_FLAGS) run-benchmark -c ./tests/$*
 
-#gdb --args $(GEM5_DEBUG) $(GEM5_FLAGS) run-benchmark -c ./tests/$*
+#$(GEM5) $(DEBUG_FLAG) $(GEM5_FLAGS) run-benchmark -c ./tests/$*
 
 spmm:
 	$(GEM5) $(GEM5_FLAGS) run-benchmark -c $(shell pwd)/spmm --options="4096 4096 128 0.5"
