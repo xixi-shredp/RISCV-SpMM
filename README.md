@@ -41,6 +41,7 @@ class BaseSystem(System):
 
 - only support `int8_t/int16_t/int32_t/int64_t` currently. (set by spmm_elen.)
 - Floatpoint has not been supported now. (spmm_fp should be False)
+- For debugging, the `MaxSpMMVecLenInBits` is set to 1024, spmm_vlen should be less than half of that. (set in `$GEM5_HOME/src/arch/riscv/types.hh`)
 
 ### CPU (in `boom-gem5/system/cpus/`)
 

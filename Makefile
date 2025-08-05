@@ -1,7 +1,8 @@
 GEM5 = gem5-riscv
 GEM5_DEBUG = /opt/gem5/build/RISCV/gem5.debug
 # TEST = /opt/gem5/tests/test-progs/hello/bin/riscv/linux/hello
-TEST = LDVALIDX LDPRF VSMUL STPS MERGE
+TEST = MERGE
+# LDVALIDX LDPRF VSMUL STPS MERGE
 
 TEST_PROGRAM = $(patsubst %,./tests/%,$(TEST))
 
@@ -12,11 +13,8 @@ default:
 	make $(patsubst %,test-%,$(TEST))
 
 test-%:
-	gdb --args $(GEM5_DEBUG) $(GEM5_FLAGS) run-benchmark -c ./tests/$*
+	$(GEM5) $(DEBUG_FLAG) $(GEM5_FLAGS) run-benchmark -c ./tests/$*
 
-#$(GEM5) $(DEBUG_FLAG) $(GEM5_FLAGS) run-benchmark -c ./tests/$*
-
-spmm:
-	$(GEM5) $(GEM5_FLAGS) run-benchmark -c $(shell pwd)/spmm --options="4096 4096 128 0.5"
+#gdb --args $(GEM5_DEBUG) $(GEM5_FLAGS) run-benchmark -c ./tests/$*
 
 .PHONY: default spmm

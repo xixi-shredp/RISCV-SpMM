@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define ElemType float
+#define FP_EN
 #define VLEN 256
 #define ELEN (sizeof(ElemType) * 8)
 
@@ -10,11 +12,17 @@
 
 #define LDVALIDX(vr0, vr1, rd) \
   asm volatile(".insn r 0x0b, 0x0, 0x0, %0, x" #vr1 ", x" #vr0 \
-              :"=r"(rd):)
+              ::"r"(rd):)
 
+#ifdef FP_EN
+#define VSMV(vr0, rd, index) \
+  asm volatile(".insn r 0x0b, 0x1, " #index ", %0, x" #vr0 ", x0" \
+              :"=f"(rd):)
+#else
 #define VSMV(vr0, rd, index) \
   asm volatile(".insn r 0x0b, 0x1, " #index ", %0, x" #vr0 ", x0" \
               :"=r"(rd):)
+#endif
 
 #define LDPRF(vrd, rs1, rs2) \
   asm volatile(".insn r 0x0b, 0x2, 0x0, x" #vrd ", %0, %1" \

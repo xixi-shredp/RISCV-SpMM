@@ -9,15 +9,7 @@ mkdir -p logs
 
 # 参数组合列表，每组是："M K N density"
 option_list=(
-  "8192 2048 32 0.5"
-  "2048 8192 32 0.5"
-  "2048 2048 32 0.5"
-  "11008 4096 32 0.5"
-  "4096 11008 32 0.5"
-  "4096 4096 32 0.5"
-  "5632 2048 32 0.5"
-  "2048 5632 32 0.5"
-  "2048 2048 32 0.5"
+  "100 100 100 0.5"
 )
 
 batch_run_spmm() {
@@ -47,9 +39,9 @@ batch_run_spmm() {
 export -f batch_run_spmm
 
 # 串行执行
-# for opt in "${option_list[@]}"; do
-#   batch_run_spmm "$opt"
-# done
+for opt in "${option_list[@]}"; do
+  batch_run_spmm "$opt"
+done
 
 # 并行执行
-parallel -j3 batch_run_spmm ::: "${option_list[@]}"
+# parallel -j3 batch_run_spmm ::: "${option_list[@]}"

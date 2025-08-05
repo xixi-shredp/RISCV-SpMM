@@ -1,11 +1,17 @@
 #include "../src/spmm.h"
+#include "test_data.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-ElemType vs0[ENUM] = {1, 2, 3, 4, 5, 6, 7, 8},
-         vs1[ENUM] = {1, 2, 0, 3, 2, 0, 1, 0};
+#ifdef FP_EN
+ElemType vs0[ENUM] = FP_DATA1, vs1[ENUM] = FP_DATA2;
+#define FMT "%f"
+#else
+ElemType vs0[ENUM] = INT_DATA1, vs1[ENUM] = INT_DATA2;
+#define FMT "%d"
+#endif
 
 ElemType vd[ENUM];
 
@@ -17,7 +23,7 @@ void prepare_data() {
 }
 
 int main() {
-  int tem = -1;
+  ElemType tem = -1;
 
   prepare_data();
 

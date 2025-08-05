@@ -1,133 +1,170 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <assert.h>
+#include <string.h>
 #include "gem5/m5ops.h"
 
-#define GROUP_HEIGHT 4
-
-int M, K, N;        // matrix dimensions
+int M, K, N;
 float SPARSITY;
 
-// SCG format structure
+#define TILE_M 32
+#define TILE_N 32
+
+// SCG格式结构体
 typedef struct {
     int num_groups;
-    float* val;
-    int* col_idx;
-    int* row_nnz;
-    int* row_idx;
+    float *val;      // 所有非零值
+    int *col_idx;    // 每个值对应的原始列号
+    int *row_idx;    // 非满组需要的原始行号
+    int *row_nnz;    // 每组非零元素数量，-1 表示满组
 } SCGMatrixA;
 
-float **B;
-float **C;
-SCGMatrixA A;
+SCGMatrixA A = {0};
+float **B = NULL;
+float **C = NULL;
 
 float rand_float() {
     return (float)(rand() % 1000) / 100.0f;
 }
 
-int cmp_int(const void* a, const void* b) {
+int cmp_int(const void *a, const void *b) {
     return (*(int*)a - *(int*)b);
 }
 
-void generate_random_scg() {
-    int group_count = (M + GROUP_HEIGHT - 1) / GROUP_HEIGHT;
-    A.num_groups = group_count;
+void generate_and_convert_scg() {
+    typedef struct {
+        float val;
+        int col;
+    } Entry;
 
-    int max_nnz_per_row = (int)((1.0f - SPARSITY) * K);
-    if (max_nnz_per_row < 1) max_nnz_per_row = 1;
+    Entry **rows = (Entry **)malloc(sizeof(Entry *) * M);
+    int *row_lengths = (int *)calloc(M, sizeof(int));
+    int max_nnz_per_row = 0;
 
-    int estimated_total_nnz = M * max_nnz_per_row;
-    A.val = (float*)malloc(sizeof(float) * estimated_total_nnz);
-    A.col_idx = (int*)malloc(sizeof(int) * estimated_total_nnz);
-    A.row_nnz = (int*)malloc(sizeof(int) * group_count);
-    A.row_idx = (int*)malloc(sizeof(int) * estimated_total_nnz);
-
-    int val_ptr = 0;
-    int row_idx_ptr = 0;
-
-    for (int g = 0; g < group_count; g++) {
-        int base_row = g * GROUP_HEIGHT;
-        int valid_rows = ((base_row + GROUP_HEIGHT) <= M) ? GROUP_HEIGHT : (M - base_row);
-
-        int full_group = 1;
-        int temp_val_ptr = val_ptr;
-
-        for (int i = 0; i < valid_rows; i++) {
-            int r = base_row + i;
-            int nnz = (int)((1.0f - SPARSITY) * K);
-            if (nnz < 1) nnz = 1;
-            if (nnz > K) nnz = K;
-
-            if (nnz != GROUP_HEIGHT) full_group = 0;
-
-            int* cols = (int*)malloc(sizeof(int) * nnz);
-            int* flags = (int*)calloc(K, sizeof(int));
-            int count = 0;
-            while (count < nnz) {
-                int c = rand() % K;
-                if (!flags[c]) {
-                    flags[c] = 1;
-                    cols[count++] = c;
-                }
+    for (int i = 0; i < M; ++i) {
+        rows[i] = (Entry *)malloc(sizeof(Entry) * K);
+        for (int j = 0; j < K; ++j) {
+            if (((float)rand() / RAND_MAX) > SPARSITY) {
+                rows[i][row_lengths[i]].val = rand_float();
+                rows[i][row_lengths[i]].col = j;
+                row_lengths[i]++;
             }
-            qsort(cols, nnz, sizeof(int), cmp_int);
+        }
+        if (row_lengths[i] > max_nnz_per_row)
+            max_nnz_per_row = row_lengths[i];
+    }
 
-            for (int j = 0; j < nnz; j++) {
-                A.val[val_ptr] = rand_float();
-                A.col_idx[val_ptr] = cols[j];
-                if (!full_group) A.row_idx[row_idx_ptr++] = r;
-                val_ptr++;
+    A.num_groups = max_nnz_per_row;
+    A.row_nnz = (int *)malloc(sizeof(int) * A.num_groups);
+    A.val = (float *)malloc(sizeof(float) * M * max_nnz_per_row);
+    A.col_idx = (int *)malloc(sizeof(int) * M * max_nnz_per_row);
+    A.row_idx = (int *)malloc(sizeof(int) * M * max_nnz_per_row);
+
+    int val_ptr = 0, row_ptr = 0;
+
+    for (int g = 0; g < A.num_groups; ++g) {
+        typedef struct {
+            int row;
+            float val;
+            int col;
+        } GroupEntry;
+
+        GroupEntry *group_entries = (GroupEntry *)malloc(sizeof(GroupEntry) * M);
+        int count = 0;
+
+        for (int i = 0; i < M; ++i) {
+            if (row_lengths[i] > g) {
+                group_entries[count].row = i;
+                group_entries[count].val = rows[i][g].val;
+                group_entries[count].col = rows[i][g].col;
+                count++;
             }
-
-            free(cols);
-            free(flags);
         }
 
-        A.row_nnz[g] = full_group ? -1 : valid_rows;
+        A.row_nnz[g] = (count == M) ? -1 : count;
+
+        if (count != M)
+            qsort(group_entries, count, sizeof(GroupEntry), cmp_int);
+
+        for (int i = 0; i < count; ++i) {
+            A.val[val_ptr] = group_entries[i].val;
+            A.col_idx[val_ptr++] = group_entries[i].col;
+            if (A.row_nnz[g] != -1)
+                A.row_idx[row_ptr++] = group_entries[i].row;
+        }
+        free(group_entries);
     }
+
+    for (int i = 0; i < M; ++i) free(rows[i]);
+    free(rows);
+    free(row_lengths);
 }
 
 void generate_dense_B() {
-    for (int i = 0; i < K; ++i)
+    B = (float **)malloc(sizeof(float *) * K);
+    for (int i = 0; i < K; ++i) {
+        B[i] = (float *)malloc(sizeof(float) * N);
         for (int j = 0; j < N; ++j)
             B[i][j] = rand_float();
+    }
+}
+
+void allocate_C() {
+    C = (float **)malloc(sizeof(float *) * M);
+    for (int i = 0; i < M; ++i) {
+        C[i] = (float *)calloc(N, sizeof(float));
+    }
 }
 
 void spmm_outer_scg() {
-    for (int i = 0; i < M; ++i)
-        for (int j = 0; j < N; ++j)
-            C[i][j] = 0.0f;
-
-    int row_idx_ptr = 0;
-    int val_ptr = 0;
-
+    int val_ptr = 0, row_ptr = 0;
     m5_reset_stats(0, 0);
-    for (int g = 0; g < A.num_groups; g++) {
-        int nnz = A.row_nnz[g];
-        int group_rows = (nnz == -1) ? GROUP_HEIGHT : nnz;
 
-        for (int i = 0; i < group_rows; i++) {
-            int row = (nnz == -1) ? (g * GROUP_HEIGHT + i) : A.row_idx[row_idx_ptr++];
-            float a_val = A.val[val_ptr];
-            int col = A.col_idx[val_ptr++];
-            for (int j = 0; j < N; j++) {
-                C[row][j] += a_val * B[col][j];
+    for (int i0 = 0; i0 < M; i0 += TILE_M) {
+        for (int j0 = 0; j0 < N; j0 += TILE_N) {
+            for (int g = 0; g < A.num_groups; ++g) {
+                int count = A.row_nnz[g];
+                if (count == -1) {
+                    for (int i = i0; i < i0 + TILE_M && i < M; ++i) {
+                        float a_val = A.val[val_ptr];
+                        int col = A.col_idx[val_ptr++];
+                        for (int j = j0; j < j0 + TILE_N && j < N; ++j) {
+                            C[i][j] += a_val * B[col][j];
+                        }
+                    }
+                } else {
+                    for (int i = 0; i < count; ++i) {
+                        int row = A.row_idx[row_ptr++];
+                        if (row < i0 || row >= i0 + TILE_M) continue;
+                        float a_val = A.val[val_ptr];
+                        int col = A.col_idx[val_ptr++];
+                        for (int j = j0; j < j0 + TILE_N && j < N; ++j) {
+                            C[row][j] += a_val * B[col][j];
+                        }
+                    }
+                }
             }
+            val_ptr = 0;
+            row_ptr = 0;
         }
     }
     m5_dump_stats(0, 0);
 }
 
 void cleanup() {
-    free(A.val);
-    free(A.col_idx);
-    free(A.row_nnz);
-    free(A.row_idx);
-
-    for (int i = 0; i < K; ++i) free(B[i]);
-    free(B);
-    for (int i = 0; i < M; ++i) free(C[i]);
-    free(C);
+    if (A.val) free(A.val);
+    if (A.col_idx) free(A.col_idx);
+    if (A.row_idx) free(A.row_idx);
+    if (A.row_nnz) free(A.row_nnz);
+    if (B) {
+        for (int i = 0; i < K; ++i) free(B[i]);
+        free(B);
+    }
+    if (C) {
+        for (int i = 0; i < M; ++i) free(C[i]);
+        free(C);
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -141,19 +178,16 @@ int main(int argc, char *argv[]) {
     N = atoi(argv[3]);
     SPARSITY = atof(argv[4]);
 
-    srand(1);
+    srand(0);
 
-    B = (float **)malloc(K * sizeof(float *));
-    for (int i = 0; i < K; ++i) B[i] = (float *)malloc(N * sizeof(float));
-
-    C = (float **)malloc(M * sizeof(float *));
-    for (int i = 0; i < M; ++i) C[i] = (float *)malloc(N * sizeof(float));
-
-    generate_random_scg();
+    generate_and_convert_scg();
     generate_dense_B();
+    allocate_C();
+
     spmm_outer_scg();
 
-    cleanup();
     m5_exit(0);
+
+    cleanup();
     return 0;
 }

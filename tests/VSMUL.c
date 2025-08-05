@@ -1,10 +1,17 @@
 #include "../src/spmm.h"
+#include "test_data.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-ElemType vs0[ENUM] = {1, 2, 3, 4, 5, 6, 7, 8},
-         vs1[ENUM] = {1, 2, 0, 3, 2, 0, 1, 0};
+#ifdef FP_EN
+ElemType vs0[ENUM] = FP_DATA1, vs1[ENUM] = FP_DATA2;
+#define FMT "%f"
+#else
+ElemType vs0[ENUM] = INT_DATA1, vs1[ENUM] = INT_DATA2;
+#define FMT "%d"
+#endif
+
 ElemType vd[ENUM];
 
 void prepare_data() {
@@ -23,7 +30,7 @@ void ref_vsmul(int imm) {
 #define TEST_VSMUL_VSMV(x)                                                     \
   VSMV(2, tem, x);                                                             \
   if (tem != vd[x]) {                                                          \
-    printf("error in " #x ": tem = %d, ref = %d\n", tem, vd[x]);               \
+    printf("error in " #x ": tem = " FMT ", ref = " FMT "\n", tem, vd[x]);     \
     exit(1);                                                                   \
   }
 
@@ -40,7 +47,7 @@ void ref_vsmul(int imm) {
   TEST_VSMUL_VSMV(7);
 
 int main() {
-  int tem = -1;
+  ElemType tem = -1;
 
   prepare_data();
 
