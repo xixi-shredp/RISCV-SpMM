@@ -35,11 +35,7 @@ int main() {
 
   prepare_data();
 
-  printf("barrier\n");
-
   MERGE(2, 0, 1);
-
-  printf("barrier\n");
 
   ref_merge();
 
@@ -48,6 +44,10 @@ int main() {
 
   if (memcmp(ref, vd, VLEN / 8) != 0) {
     printf("error\n");
+    printf("ref  dut\n");
+    for (int i = 0 ;i < ENUM;i++){
+      printf(FMT " " FMT "\n", ref[i], vd[i]);
+    }
     exit(1);
   }
 

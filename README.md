@@ -39,9 +39,12 @@ class BaseSystem(System):
     ...
 ```
 
-- only support `int8_t/int16_t/int32_t/int64_t` currently. (set by spmm_elen.)
-- Floatpoint has not been supported now. (spmm_fp should be False)
-- For debugging, the `MaxSpMMVecLenInBits` is set to 1024, spmm_vlen should be less than half of that. (set in `$GEM5_HOME/src/arch/riscv/types.hh`)
+- support `int8_t/int16_t/int32_t/int64_t`. (set by spmm_elen.)
+- float32 has been supported now. (spmm_fp should be True)
+- For debugging, the `MaxSpMMVecLenInBits` is set to 8192, spmm_vlen should be less than half of that. (set in `$GEM5_HOME/src/arch/riscv/types.hh`)
+
+> **NOTE**:
+> xixi-gem5 cann't support int and float simultaneously. Currently, the float is supported at the default commit (spmm-dev). If you want to use int-version, please checkout to the int-spmm branch.
 
 ### CPU (in `boom-gem5/system/cpus/`)
 
